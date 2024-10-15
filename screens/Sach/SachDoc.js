@@ -9,41 +9,45 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
-import { bookContents } from '../../api/book'; // Import nội dung sách
-import { MaterialIcons } from '@expo/vector-icons'; // Import biểu tượng MaterialIcons
+import { MaterialIcons } from '@expo/vector-icons';
+import { useFonts } from 'expo-font';
 
 const ReadBookScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
-  const [chapters, setChapters] = useState([]); // Mảng chứa nội dung chương
-  const [currentChapterIndex, setCurrentChapterIndex] = useState(0); // Chỉ số chương hiện tại
-  const [modalVisible, setModalVisible] = useState(false); // Trạng thái hiển thị modal
-  const [settingsModalVisible, setSettingsModalVisible] = useState(false); // Modal cho cài đặt
-  const [fontSize, setFontSize] = useState(16); // Trạng thái font size
-  const [backgroundColor, setBackgroundColor] = useState('#fff'); // Trạng thái background
-
-  // Tạo tham chiếu cho ScrollView
+  const [chapters, setChapters] = useState([]);
+  const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [fontSize, setFontSize] = useState(16);
+  const [backgroundColor, setBackgroundColor] = useState('#fff');
+  const [selectedFontFamily, setSelectedFontFamily] = useState('System');
   const scrollViewRef = useRef();
 
-  const getRandomChapters = (allChapters, minChapters = 2, maxChapters = 8) => {
-    // Kiểm tra nếu allChapters không có dữ liệu
-    if (!allChapters || allChapters.length === 0) return [];
-
-    // Số chương tối đa có thể chọn (không vượt quá số chương có sẵn)
-    const availableChapters = Math.min(maxChapters, allChapters.length);
-
-    // Chọn một số ngẫu nhiên giữa minChapters và availableChapters
-    const chapterCount = Math.floor(Math.random() * (availableChapters - minChapters + 1)) + minChapters;
-
-    // Chọn một chỉ số bắt đầu ngẫu nhiên
-    const startIndex = Math.floor(Math.random() * (allChapters.length - chapterCount));
-
-    return allChapters.slice(startIndex, startIndex + chapterCount);
+  const fetchBookContent = async (bookId) => {
+    try {
+      const response = await fetch(`http://192.168.1.83:3000/books/${bookId}`); // Thay thế bằng URL API của bạn
+      const data = await response.json();
+      return data.noidung; // Giả sử rằng API trả về nội dung sách trong trường "noidung"
+    } catch (error) {
+      console.error('Error fetching book content:', error);
+      return null; // Trả về null nếu có lỗi
+    }
   };
 
   useEffect(() => {
-    const selectedChapters = getRandomChapters(bookContents); // Gọi hàm với bookContents
-    setChapters(selectedChapters);
-    setLoading(false);
+    const loadBookContent = async () => {
+      const content = await fetchBookContent(route.params.bookId);
+      if (content) {
+        const splitChapters = [];
+        for (let i = 0; i < content.length; i += 1200) {
+          splitChapters.push(content.substring(i, i + 1200)); // Chia nội dung thành đoạn 100 ký tự
+        }
+        setChapters(splitChapters);
+      }
+      setLoading(false);
+    };
+
+    loadBookContent();
 
     navigation.setOptions({
       headerTitle: 'Đọc Sách',
@@ -58,31 +62,17 @@ const ReadBookScreen = ({ route, navigation }) => {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, route.params.bookId]);
+  }, [navigation, route.params.bookId]); // Đảm bảo rằng bookId được bao gồm trong dependency array
 
-  const toggleModal = () => {
-    setModalVisible(!modalVisible); // Chuyển đổi trạng thái hiển thị modal
-  };
+  const [fontsLoaded] = useFonts({
+    'Roboto-Black': require('../../assets/fonts/Roboto-Black.ttf'),
+    'Roboto-Bold': require('../../assets/fonts/Roboto-Bold.ttf'),
+    'Roboto-Regular': require('../../assets/fonts/Roboto-Regular.ttf'),
+    'Roboto-Light': require('../../assets/fonts/Roboto-Light.ttf'),
+    'Roboto-Thin': require('../../assets/fonts/Roboto-Thin.ttf'),
+  });
 
-  const toggleSettingsModal = () => {
-    setSettingsModalVisible(!settingsModalVisible); // Chuyển đổi trạng thái hiển thị settings modal
-  };
-
-  const handleSelectChapter = (index) => {
-    setCurrentChapterIndex(index);
-    scrollViewRef.current.scrollTo({ y: 0, animated: true }); // Chọn chương khi nhấn vào danh sách
-    toggleModal(); // Đóng modal
-  };
-
-  const handleNextChapter = () => {
-    if (currentChapterIndex < chapters.length - 1) {
-      setCurrentChapterIndex(currentChapterIndex + 1); // Tăng chỉ số chương nếu còn chương
-      // Cuộn đến đầu chương mới
-      scrollViewRef.current.scrollTo({ y: 0, animated: true });
-    }
-  };
-
-  if (loading) {
+  if (!fontsLoaded || loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -90,12 +80,40 @@ const ReadBookScreen = ({ route, navigation }) => {
     );
   }
 
+  const toggleModal = () => {
+    setModalVisible(!modalVisible);
+  };
+
+  const toggleSettingsModal = () => {
+    setSettingsModalVisible(!settingsModalVisible);
+  };
+
+  const handleSelectChapter = (index) => {
+    setCurrentChapterIndex(index);
+    scrollViewRef.current.scrollTo({ y: 0, animated: true });
+    toggleModal();
+  };
+
+  const handleNextChapter = () => {
+    if (currentChapterIndex < chapters.length - 1) {
+      setCurrentChapterIndex(currentChapterIndex + 1);
+      scrollViewRef.current.scrollTo({ y: 0, animated: true });
+    }
+  };
+
+  const colors = ['#fff', '#f0f8ff', '#ffe4e1', '#fafad2', '#d3ffd3', '#add8e6'];
+  const colorNames = ['Trắng', 'Xanh nhạt', 'Hồng nhạt', 'Vàng nhạt', 'Xanh lá cây nhạt', 'Xanh dương nhạt'];
+  const fonts = ['Roboto-Black', 'Roboto-Regular', 'Roboto-Bold', 'Roboto-Light', 'Roboto-Thin']; // Danh sách font
+
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <ScrollView ref={scrollViewRef}>
-        {/* Hiển thị chương hiện tại */}
-        <Text style={styles.chapterTitle}>{`Chương ${currentChapterIndex + 1}`}</Text>
-        <Text style={[styles.text, { fontSize }]}>{chapters[currentChapterIndex]}</Text>
+        <Text style={[styles.chapterTitle, { fontFamily: selectedFontFamily }]}>
+          {`Chương ${currentChapterIndex + 1}`}
+        </Text>
+        <Text style={[styles.text, { fontSize, fontFamily: selectedFontFamily }]}>
+          {chapters[currentChapterIndex]} {/* Nội dung sách sẽ được hiển thị tại đây */}
+        </Text>
         {currentChapterIndex < chapters.length - 1 && (
           <TouchableOpacity onPress={handleNextChapter} style={styles.nextChapterButton}>
             <Text style={styles.nextChapterButtonText}>Đọc chương tiếp theo</Text>
@@ -103,31 +121,39 @@ const ReadBookScreen = ({ route, navigation }) => {
         )}
       </ScrollView>
 
-      {/* Nút Cài Đặt ở góc dưới phải */}
       <TouchableOpacity onPress={toggleSettingsModal} style={styles.settingsButton}>
         <MaterialIcons name="settings" size={30} color="white" />
       </TouchableOpacity>
 
-      {/* Modal cài đặt */}
       <Modal visible={settingsModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Cài đặt</Text>
-
-            {/* Các tuỳ chọn cài đặt */}
-            <TouchableOpacity onPress={() => setBackgroundColor('#f0f8ff')} style={styles.settingButton}>
-              <Text style={styles.settingButtonText}>Đổi màu nền (Xanh nhạt)</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setBackgroundColor('#fff')} style={styles.settingButton}>
-              <Text style={styles.settingButtonText}>Đặt lại màu nền (Trắng)</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setFontSize(fontSize + 2)} style={styles.settingButton}>
-              <Text style={styles.settingButtonText}>Tăng kích thước chữ</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setFontSize(fontSize - 2)} style={styles.settingButton}>
-              <Text style={styles.settingButtonText}>Giảm kích thước chữ</Text>
-            </TouchableOpacity>
-
+            <Text style={styles.settingTitle}>Chọn màu nền:</Text>
+            {colors.map((color, index) => (
+              <TouchableOpacity 
+                key={index} 
+                onPress={() => setBackgroundColor(color)} 
+                style={[styles.colorButton, { backgroundColor: color }]}>
+                <Text style={styles.colorButtonText}>{colorNames[index]}</Text> 
+              </TouchableOpacity>
+            ))}
+            <Text style={styles.settingTitle}>Chọn font chữ:</Text>
+            {fonts.map((font, index) => (
+              <TouchableOpacity key={index} onPress={() => setSelectedFontFamily(font)} style={styles.fontButton}>
+                <Text style={styles.fontButtonText}>{font}</Text>
+              </TouchableOpacity>
+            ))}
+            <Text style={styles.settingTitle}>Kích thước chữ:</Text>
+            <View style={styles.fontSizeControls}>
+              <TouchableOpacity onPress={() => setFontSize((prev) => Math.max(prev - 2, 10))}>
+                <Text style={styles.fontSizeButton}>-</Text>
+              </TouchableOpacity>
+              <Text>{fontSize}</Text>
+              <TouchableOpacity onPress={() => setFontSize((prev) => prev + 2)}>
+                <Text style={styles.fontSizeButton}>+</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity onPress={toggleSettingsModal} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>Đóng</Text>
             </TouchableOpacity>
@@ -135,17 +161,16 @@ const ReadBookScreen = ({ route, navigation }) => {
         </View>
       </Modal>
 
-      {/* Modal hiển thị danh sách chương */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Danh sách chương</Text>
+            <Text style={styles.modalTitle}>Chọn chương</Text>
             <FlatList
               data={chapters}
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item, index }) => (
                 <TouchableOpacity onPress={() => handleSelectChapter(index)}>
-                  <Text style={styles.modalChapter}>{`Chương ${index + 1}`}</Text>
+                  <Text style={styles.chapterItem}>{`Chương ${index + 1}`}</Text>
                 </TouchableOpacity>
               )}
             />
@@ -160,29 +185,41 @@ const ReadBookScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
   chapterTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#333',
   },
   text: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#333',
   },
-  menuButton: {
-    marginRight: 10,
+  nextChapterButton: {
+    marginTop: 20,
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 5,
+  },
+  nextChapterButtonText: {
+    color: 'white',
+    textAlign: 'center',
+  },
+  settingsButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    backgroundColor: '#007bff',
+    borderRadius: 30,
+    padding: 10,
   },
   modalContainer: {
     flex: 1,
@@ -191,59 +228,59 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '80%',
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
+    width: '80%',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  modalChapter: {
-    fontSize: 16,
+  settingTitle: {
+    fontWeight: 'bold',
+    marginVertical: 10,
+  },
+  colorButton: {
+    padding: 10,
+    borderRadius: 5,
+    marginVertical: 5,
+  },
+  colorButtonText: {
+    textAlign: 'center',
+  },
+  fontButton: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    borderBottomColor: '#ccc',
+  },
+  fontButtonText: {
+    textAlign: 'left',
+  },
+  fontSizeControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+  },
+  fontSizeButton: {
+    fontSize: 20,
   },
   closeButton: {
     marginTop: 20,
+    backgroundColor: '#007bff',
     padding: 10,
-    backgroundColor: '#ff6347',
     borderRadius: 5,
-    alignItems: 'center',
   },
   closeButtonText: {
-    color: '#fff',
+    color: 'white',
+    textAlign: 'center',
   },
-  nextChapterButton: {
-    marginTop: 20,
-    backgroundColor: '#007BFF',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  nextChapterButtonText: {
-    color: '#fff',
-  },
-  settingsButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#007BFF',
-    borderRadius: 50,
-    padding: 15,
-    elevation: 5,
-  },
-  settingButton: {
+  chapterItem: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  settingButtonText: {
-    fontSize: 16,
-    color: '#333',
+    borderBottomColor: '#ccc',
   },
 });
 

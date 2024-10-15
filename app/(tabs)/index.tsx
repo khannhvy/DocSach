@@ -19,6 +19,7 @@ import ReadBookScreen from '../../screens/Sach/SachDoc';
 import BooksByCategoryScreen from '../../screens/Sach/TheLoaiCuThe';
 import { UserProvider } from '../../api/UserContext'; 
 import MainNavigator from '../../api/MainNavigator';
+import AdminScreen from '../../api/AdminScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -52,11 +53,13 @@ const HomeStack = () => {
       <Stack.Screen name="BookDetail" component={BookDetailScreen} />
       <Stack.Screen name="ReadBook" component={ReadBookScreen} />
       <Stack.Screen name="CategoryBooks" component={BooksByCategoryScreen} />
+      <Stack.Screen name="Admin" component={AdminScreen} />
     </Stack.Navigator>
   );
 };
 
 const App = () => {
+  // const { role } = useUser();
   return (
    <UserProvider>
     <NavigationContainer independent={true}>

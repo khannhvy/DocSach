@@ -1,16 +1,23 @@
+// AdminScreen.js
 import React from 'react';
 import { View, Text } from 'react-native';
-import { useUser } from './UserContext'; 
+import { useUser } from '../api/UserContext';
+
 const AdminScreen = () => {
   const { role } = useUser();
 
+  // Kiểm tra quyền truy cập
   if (role !== 'admin') {
-    return <Text>You do not have permission to access this page.</Text>;
+    return (
+      <View>
+        <Text>Bạn không có quyền truy cập vào màn hình này.</Text>
+      </View>
+    );
   }
 
   return (
     <View>
-      <Text>Welcome, Admin</Text>
+      <Text>Chào mừng đến với trang Admin!</Text>
     </View>
   );
 };

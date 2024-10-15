@@ -1,4 +1,3 @@
-// CategoriesScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import { fetchCategories } from '../../api/api'; // Ensure the path is correct to api.js
@@ -14,7 +13,7 @@ const CategoriesScreen = () => {
     const loadCategories = async () => {
       try {
         const data = await fetchCategories();
-        console.log(data);
+        //console.log(data);
         setCategories(data);
       } catch (err) {
         setError('Failed to load categories');
@@ -46,7 +45,7 @@ const CategoriesScreen = () => {
   const renderCategoryItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.item} 
-      onPress={() => navigation.navigate('CategoryBooks', { categoryId: item.id, categoryName: item.name })} // Navigate to BooksByCategoryScreen
+      onPress={() => navigation.navigate('CategoryBooks', { categoryId: item.id, categoryName: item.name })} // Corrected screen name
     >
       <Text style={styles.itemText}>{item.name}</Text> 
     </TouchableOpacity>
@@ -77,14 +76,13 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 12,
     marginVertical: 8,
-    backgroundColor: '#f8f9fa', // Màu nền cho từng mục
-    elevation: 2, // Đổ bóng cho các mục
-    transition: 'background-color 0.2s ease', // Hiệu ứng chuyển đổi khi nhấn
+    backgroundColor: '#f8f9fa',
+    elevation: 2,
   },
   itemText: {
     fontSize: 18,
-    fontWeight: 'bold', // Đậm hơn để nổi bật
-    color: '#343a40', // Màu chữ cho mục
+    fontWeight: 'bold',
+    color: '#343a40',
   },
   errorText: {
     color: 'red',

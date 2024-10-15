@@ -1,24 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import axios from 'axios';
 import Icon from '@expo/vector-icons/Ionicons';
+
+const screenWidth = Dimensions.get('window').width;
 
 const App = ({ navigation }) => {
   const [categoriesWithBooks, setCategoriesWithBooks] = useState([]);
   const [featuredBooks, setFeaturedBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const scrollX = useRef(new Animated.Value(0)).current; // Animated value for scroll position
+  const scrollViewRef = useRef(null); // Ref for Animated.ScrollView
 
   const fetchBooksAndCategories = async () => {
     try {
-       //wifi
-      // const booksResponse = await axios.get('http://192.168.1.83:3000/books');
-      // const categoriesResponse = await axios.get('http://192.168.1.83:3000/categories');
-
-
-      //4g
-      const booksResponse = await axios.get('http://192.168.105.58:3000/books');
-      const categoriesResponse = await axios.get('http://192.168.105.58:3000/categories');
+      const booksResponse = await axios.get('http://192.168.1.83:3000/books');
+      const categoriesResponse = await axios.get('http://192.168.1.83:3000/categories');
 
       const books = booksResponse.data;
       const categories = categoriesResponse.data;
@@ -31,7 +28,7 @@ const App = ({ navigation }) => {
       });
 
       setCategoriesWithBooks(categoriesWithBooks);
-      setFeaturedBooks(books.slice(0, 10)); 
+      setFeaturedBooks(books.slice(0, 10));
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -45,9 +42,15 @@ const App = ({ navigation }) => {
 
   const renderCategory = ({ item }) => (
     <View style={styles.categoryContainer}>
-      <Text style={styles.categoryName}>{item.name}</Text>
+      <View style={styles.categoryHeader}>
+        <Text style={styles.categoryName}>{item.name}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('CategoryBooks', { categoryId: item.id, categoryName: item.name })}>
+          <Icon name="chevron-forward-outline" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
       <FlatList
-        data={item.books}
+       data={item.books.slice(0, 5)}
+        //data={item.books}
         renderItem={renderBook}
         keyExtractor={book => book.id.toString()}
         horizontal
@@ -57,7 +60,16 @@ const App = ({ navigation }) => {
   );
 
   const renderBook = ({ item, isFeatured }) => (
-    <View style={styles.bookItem}>
+    <TouchableOpacity
+      style={styles.bookItem}
+      onPress={() => navigation.navigate('BookDetail', {
+        book: item
+        // bookId: item.id,
+        // bookTitle: item.title,
+        // bookAuthor: item.author,
+        // bookImage: item.coverImage
+      })}
+    >
       <Image
         source={{ uri: `http://192.168.1.83:3000/${item.coverImage}` }}
         style={isFeatured ? styles.featuredBookImage : styles.bookImage}
@@ -68,19 +80,45 @@ const App = ({ navigation }) => {
           <Text style={styles.bookAuthor}>{item.author}</Text>
         </>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   const renderFeatured = () => (
     <View style={styles.featuredContainer}>
       <Text style={styles.featuredTitle}>Nổi Bật</Text>
-      <FlatList
-        data={featuredBooks}
-        renderItem={({ item }) => renderBook({ item, isFeatured: true })}
-        keyExtractor={book => book.id.toString()}
-        horizontal
+      <Animated.ScrollView
+        horizontal={true}
         showsHorizontalScrollIndicator={false}
-      />
+        style={styles.imageScrollView}
+        ref={scrollViewRef}
+        snapToInterval={screenWidth * 0.65} // Adjust to control snap effect
+        decelerationRate="fast"
+        snapToAlignment="center"
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+      >
+        {featuredBooks.map((item, index) => {
+          const inputRange = [
+            (index - 1) * screenWidth * 0.5,
+            index * screenWidth * 0.65,
+            (index + 1) * screenWidth * 0.60,
+          ];
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.8, 1.1, 0.8],
+            extrapolate: 'clamp',
+          });
+
+          return (
+            <Animated.View key={item.id} style={{ transform: [{ scale }] }}>
+              {renderBook({ item, isFeatured: true })}
+            </Animated.View>
+          );
+        })}
+      </Animated.ScrollView>
     </View>
   );
 
@@ -100,7 +138,7 @@ const App = ({ navigation }) => {
           <Icon name="search" size={30} color="#000" />
         </TouchableOpacity>
       </View>
-      
+
       <FlatList
         data={[{ key: 'featured' }, ...categoriesWithBooks]}
         renderItem={({ item }) => {
@@ -153,8 +191,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bookImage: {
-    width: '100%',
-    height: 180,
+    width: 150,
+    height: 230, // Giảm chiều cao cho các ảnh sách
     borderRadius: 5,
   },
   bookTitle: {
@@ -167,11 +205,20 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   featuredBookImage: {
-    width: 200,
-    height: 300,
+    width: 220, // Kích thước lớn hơn cho ảnh nổi bật
+    height: 350, // Kích thước lớn hơn cho ảnh nổi bật
     borderRadius: 5,
-    marginRight: 20,
-    marginVertical: 10,
+    //marginRight: 20,
+   // marginVertical: 10,
+    marginHorizontal: 0.08,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', // Căn đều giữa tiêu đề và biểu tượng
+    alignItems: 'center',
+  },
+  imageScrollView: {
+   
   },
 });
 

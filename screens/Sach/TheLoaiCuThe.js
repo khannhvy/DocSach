@@ -11,12 +11,13 @@ const BooksByCategoryScreen = ({ route, navigation }) => {
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        // Lấy danh sách sách từ API dựa trên categoryId
         const data = await fetchBooksByCategory(categoryId); 
-        console.log(data); // Kiểm tra cấu trúc dữ liệu
-
-        // Lọc sách dựa trên `categoryId` để chỉ hiển thị sách thuộc thể loại đã chọn
-        const filteredBooks = data.filter(book => book.categoryId === categoryId);
+       // console.log('Dữ liệu từ API:', data); // Kiểm tra dữ liệu trả về từ API
+        
+        // Sử dụng 'category' thay vì 'categoryId' để lọc
+        const filteredBooks = data.filter(book => book.category === categoryId);
+        //console.log('Sách sau khi lọc:', filteredBooks); // Kiểm tra sách sau khi lọc
+    
         setBooks(filteredBooks);
       } catch (err) {
         setError('Failed to load books');
@@ -25,6 +26,7 @@ const BooksByCategoryScreen = ({ route, navigation }) => {
         setLoading(false);
       }
     };
+    
 
     loadBooks();
   }, [categoryId]);
@@ -46,18 +48,13 @@ const BooksByCategoryScreen = ({ route, navigation }) => {
   }
 
   const renderBookItem = ({ item }) => {
-    // const coverImageUrl = item.coverImage 
-    //   ? `http://192.168.1.83:3000/${item.coverImage.replace(/\\/g, '/')}` 
-    //   : 'default_image_url.png'; // Sử dụng URL hình ảnh mặc định hợp lệ
-
     const coverImageUrl = item.coverImage 
-    ? `http://192.168.105.58:3000/${item.coverImage.replace(/\\/g, '/')}` 
+    ? `http://192.168.1.83:3000/${item.coverImage.replace(/\\/g, '/')}` 
     : 'default_image_url.png'; // Sử dụng URL hình ảnh mặc định hợp lệ
 
-    // Ghi lại lỗi nếu không có ảnh bìa
-    if (!item.coverImage) {
-      console.error(`No cover image for book: ${item.title}`);
-    }
+  // const coverImageUrl = item.coverImage 
+  // ? `http://192.168.105.58:3000/${item.coverImage.replace(/\\/g, '/')}` 
+  // : 'default_image_url.png'; // Sử dụng URL hình ảnh mặc định hợp lệ
 
     return (
       <TouchableOpacity 
