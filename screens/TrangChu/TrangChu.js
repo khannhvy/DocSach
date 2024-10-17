@@ -44,7 +44,7 @@ const App = ({ navigation }) => {
     <View style={styles.categoryContainer}>
       <View style={styles.categoryHeader}>
         <Text style={styles.categoryName}>{item.name}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('CategoryBooks', { categoryId: item.id, categoryName: item.name })}>
+        <TouchableOpacity onPress={() => navigation.navigate('Thể loại', { categoryId: item.id, categoryName: item.name })}>
           <Icon name="chevron-forward-outline" size={24} color="#000" />
         </TouchableOpacity>
       </View>
@@ -62,7 +62,7 @@ const App = ({ navigation }) => {
   const renderBook = ({ item, isFeatured }) => (
     <TouchableOpacity
       style={styles.bookItem}
-      onPress={() => navigation.navigate('BookDetail', {
+      onPress={() => navigation.navigate('Chi tiết', {
         book: item
         // bookId: item.id,
         // bookTitle: item.title,
@@ -134,7 +134,7 @@ const App = ({ navigation }) => {
           <Icon name="menu" size={30} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerText}>Book App</Text>
-        <TouchableOpacity onPress={() => console.log('Search clicked')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Tìm kiếm')}>
           <Icon name="search" size={30} color="#000" />
         </TouchableOpacity>
       </View>

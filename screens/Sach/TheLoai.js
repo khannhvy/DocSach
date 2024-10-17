@@ -45,7 +45,7 @@ const CategoriesScreen = () => {
   const renderCategoryItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.item} 
-      onPress={() => navigation.navigate('CategoryBooks', { categoryId: item.id, categoryName: item.name })} // Corrected screen name
+      onPress={() => navigation.navigate('Thể loại', { categoryId: item.id, categoryName: item.name })} // Corrected screen name
     >
       <Text style={styles.itemText}>{item.name}</Text> 
     </TouchableOpacity>

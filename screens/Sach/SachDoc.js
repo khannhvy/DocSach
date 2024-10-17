@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ReadBookScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -25,12 +26,31 @@ const ReadBookScreen = ({ route, navigation }) => {
 
   const fetchBookContent = async (bookId) => {
     try {
-      const response = await fetch(`http://192.168.1.83:3000/books/${bookId}`); // Thay thế bằng URL API của bạn
+      const response = await fetch(`http://192.168.1.83:3000/books/${bookId}`);
       const data = await response.json();
       return data.noidung; // Giả sử rằng API trả về nội dung sách trong trường "noidung"
     } catch (error) {
       console.error('Error fetching book content:', error);
       return null; // Trả về null nếu có lỗi
+    }
+  };
+
+  const saveCurrentChapter = async (index) => {
+    try {
+      await AsyncStorage.setItem(`currentChapter_${route.params.bookId}`, index.toString());
+    } catch (error) {
+      console.error('Error saving current chapter:', error);
+    }
+  };
+
+  const loadCurrentChapter = async () => {
+    try {
+      const savedIndex = await AsyncStorage.getItem(`currentChapter_${route.params.bookId}`);
+      if (savedIndex !== null) {
+        setCurrentChapterIndex(parseInt(savedIndex, 10));
+      }
+    } catch (error) {
+      console.error('Error loading current chapter:', error);
     }
   };
 
@@ -40,13 +60,14 @@ const ReadBookScreen = ({ route, navigation }) => {
       if (content) {
         const splitChapters = [];
         for (let i = 0; i < content.length; i += 1200) {
-          splitChapters.push(content.substring(i, i + 1200)); // Chia nội dung thành đoạn 100 ký tự
+          splitChapters.push(content.substring(i, i + 1200));
         }
         setChapters(splitChapters);
       }
       setLoading(false);
     };
 
+    loadCurrentChapter(); // Tải chương đã lưu
     loadBookContent();
 
     navigation.setOptions({
@@ -90,13 +111,16 @@ const ReadBookScreen = ({ route, navigation }) => {
 
   const handleSelectChapter = (index) => {
     setCurrentChapterIndex(index);
+    saveCurrentChapter(index); // Lưu chương hiện tại
     scrollViewRef.current.scrollTo({ y: 0, animated: true });
     toggleModal();
   };
 
   const handleNextChapter = () => {
     if (currentChapterIndex < chapters.length - 1) {
-      setCurrentChapterIndex(currentChapterIndex + 1);
+      const nextIndex = currentChapterIndex + 1;
+      setCurrentChapterIndex(nextIndex);
+      saveCurrentChapter(nextIndex); // Lưu chương hiện tại
       scrollViewRef.current.scrollTo({ y: 0, animated: true });
     }
   };
@@ -106,7 +130,7 @@ const ReadBookScreen = ({ route, navigation }) => {
   const fonts = ['Roboto-Black', 'Roboto-Regular', 'Roboto-Bold', 'Roboto-Light', 'Roboto-Thin']; // Danh sách font
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
+    <View style={[styles.container, { backgroundColor }]} >
       <ScrollView ref={scrollViewRef}>
         <Text style={[styles.chapterTitle, { fontFamily: selectedFontFamily }]}>
           {`Chương ${currentChapterIndex + 1}`}
@@ -134,7 +158,7 @@ const ReadBookScreen = ({ route, navigation }) => {
               <TouchableOpacity 
                 key={index} 
                 onPress={() => setBackgroundColor(color)} 
-                style={[styles.colorButton, { backgroundColor: color }]}>
+                style={[styles.colorButton, { backgroundColor: color }]} >
                 <Text style={styles.colorButtonText}>{colorNames[index]}</Text> 
               </TouchableOpacity>
             ))}
@@ -187,7 +211,7 @@ const ReadBookScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
   centered: {
     flex: 1,
@@ -202,24 +226,25 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     lineHeight: 24,
+    marginBottom: 20,
   },
   nextChapterButton: {
-    marginTop: 20,
-    backgroundColor: '#007bff',
+    backgroundColor: '#007BFF',
     padding: 10,
     borderRadius: 5,
+    alignItems: 'center',
   },
   nextChapterButtonText: {
     color: 'white',
-    textAlign: 'center',
+    fontSize: 16,
   },
   settingsButton: {
     position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#007bff',
-    borderRadius: 30,
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#007BFF',
     padding: 10,
+    borderRadius: 50,
   },
   modalContainer: {
     flex: 1,
@@ -228,18 +253,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
+    width: '80%',
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
-    width: '80%',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
     marginBottom: 10,
   },
   settingTitle: {
-    fontWeight: 'bold',
+    fontSize: 18,
     marginVertical: 10,
   },
   colorButton: {
@@ -248,15 +272,15 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   colorButtonText: {
-    textAlign: 'center',
+    color: 'black',
   },
   fontButton: {
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderRadius: 5,
+    marginVertical: 5,
   },
   fontButtonText: {
-    textAlign: 'left',
+    color: 'black',
   },
   fontSizeControls: {
     flexDirection: 'row',
@@ -265,22 +289,24 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   fontSizeButton: {
-    fontSize: 20,
+    fontSize: 24,
+    width: 30,
+    textAlign: 'center',
   },
   closeButton: {
     marginTop: 20,
-    backgroundColor: '#007bff',
+    backgroundColor: '#007BFF',
     padding: 10,
     borderRadius: 5,
+    alignItems: 'center',
   },
   closeButtonText: {
     color: 'white',
-    textAlign: 'center',
   },
   chapterItem: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#ddd',
   },
 });
 

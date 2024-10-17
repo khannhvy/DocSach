@@ -1,13 +1,14 @@
+// screens/UserScreen.js
 import React from 'react';
-import { View, Text } from 'react-native';
-import { useUser } from './UserContext';
+import { View, Text, Button } from 'react-native';
 
-const UserScreen = () => {
-  const { role } = useUser();
-
+const UserScreen = ({ onLogout }) => {
   return (
-    <View>
-      <Text>User Dashboard</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Lịch sử đọc của bạn</Text>
+      {/* Hiển thị lịch sử đọc ở đây */}
+      
+      <Button title="Đăng xuất" onPress={onLogout} />
     </View>
   );
 };

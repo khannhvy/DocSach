@@ -1,35 +1,39 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../firebaseConfig'; // Firebase authentication
-import { firestore } from '../firebaseConfig'; // Firestore
+import React, { createContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const UserContext = createContext();
+// Tạo UserContext
+export const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
+
+  const login = async (userData) => {
+    setIsLoggedIn(true);
+    setUser(userData);
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  const logout = async () => {
+    setIsLoggedIn(false);
+    setUser(null);
+    await AsyncStorage.removeItem('user');
+  };
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        setUser(user);
-        const userDoc = await firestore.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
-          setRole(userDoc.data().role); // Lưu role vào state
-        }
-      } else {
-        setUser(null);
-        setRole(null);
+    const loadUser = async () => {
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        setIsLoggedIn(true);
       }
-    });
-
-    return () => unsubscribe();
+    };
+    loadUser();
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, role }}>
+    <UserContext.Provider value={{ isLoggedIn, user, login, logout }}>
       {children}
     </UserContext.Provider>
   );
 };
-
-export const useUser = () => useContext(UserContext);

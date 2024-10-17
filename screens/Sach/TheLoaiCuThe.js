@@ -59,7 +59,7 @@ const BooksByCategoryScreen = ({ route, navigation }) => {
     return (
       <TouchableOpacity 
         style={styles.item} 
-        onPress={() => navigation.navigate('BookDetail', { book: item })}>
+        onPress={() => navigation.navigate('Chi tiết', { book: item })}>
         <Image 
           source={{ uri: coverImageUrl }} 
           style={styles.coverImage} 

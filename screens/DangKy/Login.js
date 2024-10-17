@@ -1,36 +1,49 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../../firebaseConfig'; 
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
+import { UserContext } from '../../api/UserContext'; // Import UserContext
 
-const LoginScreen = ({ onLogin }) => {
+const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
+  const { login } = useContext(UserContext); // Lấy hàm login từ UserContext
 
   const handleLogin = async () => {
     if (email && password) {
       try {
-        // Đăng nhập người dùng
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-
-        // Lấy thông tin người dùng từ Firestore
+  
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const role = userData.role; // Lấy vai trò của người dùng
+          const userData = userDoc.data(); // Lấy dữ liệu người dùng
+          console.log("Dữ liệu người dùng:", userData); // Kiểm tra dữ liệu ở đây
+  
+          // Kiểm tra nếu userData không null hoặc undefined
+          if (userData) {
+            const userRole = userData.role; 
+            console.log("Vai trò người dùng:", userRole); 
+            
+            // Gọi hàm login với thông tin người dùng
+            login(userData); // Ghi nhớ thông tin người dùng trong UserContext
 
-          // Gọi hàm để cập nhật trạng thái đăng nhập
-          onLogin(role); 
+            // Hiển thị thông báo đăng nhập thành công
+            Alert.alert('Thông báo', 'Đăng nhập thành công!');
 
-          // Điều hướng đến màn hình dựa trên vai trò
-          if (role === 'admin') {
-            navigation.navigate('AdminDashboard'); // Điều hướng đến trang quản trị viên
+            // Điều hướng đến màn hình tương ứng dựa trên vai trò người dùng
+            if (userRole === 'admin') {
+              navigation.navigate('Admin'); 
+            } else if (userRole === 'nhanvien') { // Giả định có vai trò 'user'
+              navigation.navigate('Thư Viện1'); 
+            } else {
+              navigation.navigate('Thư Viện1'); // Bạn có thể điều hướng đến màn hình khác nếu cần
+            }
           } else {
-            navigation.navigate('Thư Viện'); // Điều hướng đến trang thư viện
+            Alert.alert('Thông báo', 'Không tìm thấy thông tin người dùng!');
           }
         } else {
           Alert.alert('Thông báo', 'Không tìm thấy thông tin người dùng!');
@@ -42,6 +55,7 @@ const LoginScreen = ({ onLogin }) => {
       Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin!');
     }
   };
+  
 
   return (
     <View style={styles.container}>
@@ -117,4 +131,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default LoginScreen; 

@@ -25,7 +25,7 @@ const BookDetailScreen = ({ route, navigation }) => {
       <Text style={styles.title}>{book.title}</Text>
       <Text style={styles.author}>{book.author}</Text>
       <Text style={styles.year}>Year: {book.year}</Text>
-      <Text style={styles.category}>Category: {book.category}</Text>
+      {/* <Text style={styles.category}>Category: {book.category}</Text> */}
       <Text style={styles.description}>{book.description}</Text>
 
       {/* Custom Button */}
